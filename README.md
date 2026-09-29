@@ -1,5 +1,5 @@
 <!--
-  README.md -- HubSpot + Stripe server-side conversions for Meta and Google
+  README.md -- HubSpot + CAPI server-side lead and purchase conversions for Meta and Google
   Author:  Jibril Sulaiman
   Created: 2026-09-28 (from production builds shipped 2026-09-05 to 2026-09-23)
   What:    Why server-side conversions from HubSpot, and every setup step with a check,
@@ -8,7 +8,7 @@
            wrong hash doesn't error; it just quietly teaches the campaigns the wrong thing.
 -->
 
-# HubSpot + Stripe server-side conversions for Meta and Google
+# HubSpot + CAPI server-side lead and purchase conversions for Meta and Google
 
 Send **one conversion per real sale and one per real lead** from HubSpot to the
 **Meta Conversions API** and **Google Ads**, server-side, from HubSpot workflows.
