@@ -22,30 +22,75 @@ scripts to set up Google's OAuth and test before anything goes live.
 
 ## Why it exists
 
-**HubSpot's native ad conversion events can't do this job.** HubSpot's
-*Ads > Conversion events* fire on form submissions, lifecycle stage changes and
-page views. For sales and leads that means:
+**HubSpot's native ad conversion events can't do this job, and HubSpot support
+confirmed why.** HubSpot's *Ads > Conversion events* (its built-in Meta
+Conversions API integration) was diagnosed against these problems in production in
+September 2026, and HubSpot's support team checked each one against the product
+documentation and confirmed all of them:
 
-- **No real purchase value.** Each event carries a fixed value you type in, not
-  what Stripe charged after promo codes and add-ons.
-- **They fire before payment.** A form submission on an order page counts as a
-  purchase, including everyone who abandons at checkout.
-- **No event id, so nothing can dedupe.** One person who submits two mapped forms
-  is two conversions.
-- **Only HubSpot's own triggers.** No custom event names and no workflow trigger,
-  so no "fire when the Stripe payment succeeds".
+1. **There's no event ID, so it can't be deduplicated, ever.** Meta dedupes by
+   matching `event_id` + `event_name` across sources. That's Meta's documented way
+   to run browser and server events side by side. A HubSpot conversion event lets
+   you set the ad network, account, trigger, form, lifecycle stage, Meta event,
+   value, lead score, data sharing and consent fields. There's no event ID field,
+   and no supported way to inject one from the integration or from a HubSpot page
+   template. HubSpot's own documentation says to *remove* any manually installed
+   pixel to avoid duplicates. The design assumes HubSpot is the only source.
+   So it can't coexist with a Conversions API sender: every purchase both report is
+   counted twice, permanently. It's HubSpot or your own server events, not both.
+2. **There's no payment trigger, so it fires before payment.** The only triggers are
+   form submission, lifecycle stage change and page view. With a HubSpot form
+   followed by a Stripe checkout, the event fires whether or not the buyer ever
+   pays. On one ticket tier over seven days: 26 conversions reported, 14 sales.
+   (Driving a lifecycle stage change from the payment fixes the timing only; points
+   1, 3 and 4 still stand.)
+3. **The value is static per event.** One fixed number per conversion event, so
+   order bumps, promo codes and comp tickets can't be represented. With two events
+   configured (base price, and base plus an optional add-on), only the add-on
+   variant ever fired, so every sale reported at the higher price, though most
+   buyers didn't take the add-on.
+4. **It can't see the real amount.** Only Stripe knows what was charged. HubSpot
+   reports an intention to buy; Stripe reports a payment.
+5. **Its pixel keeps sending after you turn the events off.** The Meta pixel added
+   through HubSpot is active on every page carrying the HubSpot tracking code, from
+   the moment it's added, whether or not any conversion event exists. It can't be
+   limited to certain pages or domains.
+6. **Silent problems leave no trail.** HubSpot support can't pull event sync logs
+   unless an event actually errored. An over-count isn't an error, so there's
+   nothing on HubSpot's side to investigate.
+7. **Two HubSpot events mapped to one Meta event report identical numbers,** which
+   looks like duplication in reporting.
 
-**Everyone else sends too, and nobody coordinates.** A typical setup has browser
-pixels on confirmation pages, Meta Event Setup Tool rules, tag-manager templates
-and HubSpot's conversion events, each sending Purchase and Lead with no shared
-event id. The platform counts every one.
+**Everyone else sends too, and nobody coordinates.** Diagnosing an 8x Purchase
+over-count found **four independent senders** on the same pixel, none sharing an
+event id:
+
+- pixel snippets hard-coded into confirmation pages, firing on every page view
+  instead of on payment
+- Meta **Event Setup Tool** rules, configured in Events Manager and invisible
+  from HubSpot. They persist until deleted there; nothing in HubSpot clears them.
+- a tag-manager tag firing Purchase on confirmation-page load
+- HubSpot's Ads conversion events
+
+Ad spend, impressions and the account connection were all flowing correctly the
+whole time. The data problem was purely conversion events.
+
+**Meta's recommendation: give each event one owner.** Meta's team, reviewing the
+same case, put it plainly: HubSpot and Stripe were both claiming the same Purchase,
+so only one can be kept, and it should be the one that knows the real amount. Let
+HubSpot report the early steps (page views, form submissions as leads, with no
+dollar values) and let the server-side Stripe sender own Purchase alone. Remove
+HubSpot's Purchase conversion event and any old Event Setup Tool rules. This repo
+does exactly that for Purchase. For Lead it goes a step further, replacing HubSpot's
+lead events with one event per lead record, because in production they ran at
+~1.2x real registrations (one person tripping two mapped forms counts twice).
 
 **What this changed in production** (one HubSpot + Stripe account, Sep 2026):
 
 | Signal | Before | After (this repo as the single sender) |
 |---|---|---|
 | Meta Purchase events per succeeded Stripe payment | **8.0x** (1,848 events, 230 payments, one day) | **1.02x** (536 events, 526 payments, one week) |
-| Meta Lead events per lead record | ~1.2x server + ~0.5x browser | **1.00x** (within 0.1-0.4% daily) |
+| Meta Lead events per lead record | ~1.2x server + ~0.5x browser (~1.75x in all) | **1.00x** (within 0.1-0.4% daily) |
 | Google Ads tag-based purchase conversions vs Stripe | tag over-claimed **~7.7x** | uploads credited from real payments only |
 
 Campaigns optimising on an 8x-inflated Purchase event are learning from noise;
@@ -134,7 +179,10 @@ Before turning anything on, list everything that sends Purchase or Lead today:
 - **Meta:** Events Manager > your dataset > **Event Setup Tool** (codeless rules
   like "URL equals" or "button text is": these don't appear in any page code);
   pixel snippets in page head HTML; tag-manager pixel tags; HubSpot's
-  *Ads > Conversion events* mapped to Purchase or Lead.
+  *Ads > Conversion events* mapped to Purchase or Lead; and the Meta pixel installed
+  through HubSpot, which runs on every tracked page even with no conversion events.
+  Keep that pixel if HubSpot should keep reporting page views; just make sure no
+  HubSpot conversion event claims Purchase.
 - **Google Ads:** Goals > Conversions: the tag-based purchase and lead actions.
 
 You'll switch these off **after** each new sender is proven, never before (the
