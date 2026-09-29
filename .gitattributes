@@ -1,0 +1,6 @@
+# .gitattributes -- keep line endings stable across Windows and macOS/Linux
+# Author: Jibril Sulaiman · Created: 2026-09-28
+# Why: probe.sh fails under bash with CRLF endings ("$'\r': command not found"),
+# and mixed endings make every diff noisy.
+* text=auto eol=lf
+*.ps1 text eol=crlf

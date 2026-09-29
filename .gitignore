@@ -1,0 +1,17 @@
+# .gitignore -- HubSpot + Stripe server-side conversions
+# Author: Jibril Sulaiman · Created: 2026-09-28
+# Why: this repo is public. OAuth client files, refresh tokens and exports (which
+# hold customer emails) must never reach history. Once pushed, a secret is compromised.
+
+node_modules/
+.env
+.env.*
+client_secret*.json
+*oauth*.json
+*token*.json
+*.csv
+*.xlsx
+*.log
+test/.tmp-*
+.DS_Store
+Thumbs.db

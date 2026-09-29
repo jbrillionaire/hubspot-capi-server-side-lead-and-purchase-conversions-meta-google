@@ -1,0 +1,16 @@
+{
+  "name": "hubspot-stripe-capi-meta-google",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "HubSpot workflow custom code actions that send Stripe purchases and leads server-side to the Meta Conversions API and Google Ads (Data Manager API), one event per real sale or lead. Zero dependencies.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test test/",
+    "guard-properties": "node scripts/create-guard-properties.mjs",
+    "google-oauth": "node scripts/google-oauth-setup.mjs",
+    "google-test": "node scripts/google-conversion-test.mjs"
+  }
+}
