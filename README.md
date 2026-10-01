@@ -126,14 +126,14 @@ manager account**, just an OAuth refresh token with one scope.
 
 | Path | What it is |
 |---|---|
-| `meta/meta-purchase-action.js` | Meta Purchase from a Stripe payment |
-| `meta/meta-lead-action.js` | Meta Lead from a lead record |
-| `google/google-purchase-action.js` | Google Ads Purchase from a Stripe payment |
-| `google/google-lead-action.js` | Google Ads enhanced conversion for leads |
-| `scripts/create-guard-properties.mjs` | Creates the four "sent at" guard properties (date-time) |
-| `scripts/google-oauth-setup.mjs` | Mints the Google refresh token (datamanager scope only) |
-| `scripts/google-conversion-test.mjs` | Validate-only test upload, and status lookup for real uploads |
-| `test/` | 20 tests: the actions run unchanged against fake Stripe, Meta, Google and HubSpot |
+| [`meta/meta-purchase-action.js`](meta/meta-purchase-action.js) | Meta Purchase from a Stripe payment |
+| [`meta/meta-lead-action.js`](meta/meta-lead-action.js) | Meta Lead from a lead record |
+| [`google/google-purchase-action.js`](google/google-purchase-action.js) | Google Ads Purchase from a Stripe payment |
+| [`google/google-lead-action.js`](google/google-lead-action.js) | Google Ads enhanced conversion for leads |
+| [`scripts/create-guard-properties.mjs`](scripts/create-guard-properties.mjs) | Creates the four "sent at" guard properties (date-time) |
+| [`scripts/google-oauth-setup.mjs`](scripts/google-oauth-setup.mjs) | Mints the Google refresh token (datamanager scope only) |
+| [`scripts/google-conversion-test.mjs`](scripts/google-conversion-test.mjs) | Validate-only test upload, and status lookup for real uploads |
+| [`test/`](test/) | 20 tests: the actions run unchanged against fake Stripe, Meta, Google and HubSpot |
 
 Each action opens with a header covering its workflow setup, secrets, inputs and
 outputs. That header is the reference; this README is the walkthrough.
@@ -149,15 +149,15 @@ outputs. That header is the reference; this README is the walkthrough.
    - Step 3: A dedicated HubSpot key for the guards
 3. [Setup: Meta](#3-setup-meta)
    - Step 4: Dataset id, access token and secrets
-   - Step 5: The META Purchase workflow (`meta/meta-purchase-action.js`)
+   - Step 5: The META Purchase workflow ([`meta/meta-purchase-action.js`](meta/meta-purchase-action.js))
    - Step 6: The META Purchase retry workflow
-   - Step 7: The META Lead workflow, with a safe cutover (`meta/meta-lead-action.js`)
+   - Step 7: The META Lead workflow, with a safe cutover ([`meta/meta-lead-action.js`](meta/meta-lead-action.js))
 4. [Setup: Google Ads](#4-setup-google-ads)
-   - Step 8: Google Cloud project and the OAuth token (`scripts/google-oauth-setup.mjs`)
+   - Step 8: Google Cloud project and the OAuth token ([`scripts/google-oauth-setup.mjs`](scripts/google-oauth-setup.mjs))
    - Step 9: Create the two conversion actions
-   - Step 10: Enhanced conversions for leads, then test (`scripts/google-conversion-test.mjs`)
-   - Step 11: The Google Lead workflow (`google/google-lead-action.js`)
-   - Step 12: The Google Purchase workflow (`google/google-purchase-action.js`)
+   - Step 10: Enhanced conversions for leads, then test ([`scripts/google-conversion-test.mjs`](scripts/google-conversion-test.mjs))
+   - Step 11: The Google Lead workflow ([`google/google-lead-action.js`](google/google-lead-action.js))
+   - Step 12: The Google Purchase workflow ([`google/google-purchase-action.js`](google/google-purchase-action.js))
    - Step 13: Cut over: make the uploads Primary
 5. [The ids that prevent double counting](#5-the-ids-that-prevent-double-counting)
 6. [Hashing: Meta and Google differ](#6-hashing-meta-and-google-differ)
@@ -517,7 +517,7 @@ association time to exist before `externalId` is read.
 > was being built.
 
 5. **Code:** delete the sample code and paste in **all** of
-   `meta/meta-purchase-action.js`. The **Full screen** button makes this easier.
+   [`meta/meta-purchase-action.js`](meta/meta-purchase-action.js). The **Full screen** button makes this easier.
    Then change one line in the SETTINGS block:
 
    ```js
@@ -716,7 +716,7 @@ The card must show **Re-enroll off**.
 
 **6e. The code, on the yes path.** Under **No Meta CAPI purchase sent at**, click
 **+ → Custom code** and set it up exactly like Step 5e. Use the same four secrets
-(no test code), the same input rows, all of `meta/meta-purchase-action.js` with
+(no test code), the same input rows, all of [`meta/meta-purchase-action.js`](meta/meta-purchase-action.js) with
 the same `OBJECT_TYPE`, the same eleven outputs, and the same rate limit
 (`3` per `1` **Seconds**). **Save.**
 
@@ -822,7 +822,7 @@ empty.
 > lead record's own id, which is identical to the event id and matches nobody.
 > It must read *"…of the associated **Contact: Most recently created**"*.
 
-4. **Code:** delete the sample and paste in **all** of `meta/meta-lead-action.js`.
+4. **Code:** delete the sample and paste in **all** of [`meta/meta-lead-action.js`](meta/meta-lead-action.js).
    In SETTINGS set:
 
    ```js
@@ -1374,7 +1374,7 @@ blank on exactly the people who just clicked your ad.
 > once live: keys already sent would stop matching. `externalId` must be the **contact's** id,
 > never the lead record's own id, or every duplicate record becomes its own person.
 
-5. **Code:** delete the sample code and paste in **all** of `google/google-lead-action.js`. The
+5. **Code:** delete the sample code and paste in **all** of [`google/google-lead-action.js`](google/google-lead-action.js). The
    **Full screen** button makes this easier. Scroll to the bottom: the last line number should be
    about **394**. A much lower number means the paste was cut off.
 6. Still in the code, near the top, find the **SETTINGS** block and change two lines:
@@ -1554,7 +1554,7 @@ No delay is needed: the code reads the buyer, amount and click id from Stripe, n
    Leave `minimumValue` unmapped (it defaults to 0.01, so $0 orders are skipped). The contact
    `gclid` is used only when the checkout carried no click id: it's the contact's *most recent*
    click, which may not be the one that led to this sale.
-3. **Code:** delete the sample code and paste in **all** of `google/google-purchase-action.js`.
+3. **Code:** delete the sample code and paste in **all** of [`google/google-purchase-action.js`](google/google-purchase-action.js).
    The last line should be about **510**. Then set, in the SETTINGS block:
 
    ```js
