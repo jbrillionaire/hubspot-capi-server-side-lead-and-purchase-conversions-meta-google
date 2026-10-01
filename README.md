@@ -477,7 +477,10 @@ association time to exist before `externalId` is read.
    | `metaCapiSentAt` | **Enrolled payment record → Meta CAPI purchase sent at** (the guard) |
    | `checkoutSessionId` | **Enrolled payment record →** a property holding the `cs_...` id, *if you have one*. Saves one Stripe call. |
    | `externalId` | **Contact: \<label\>, Most recently created → Record ID** |
-   | `contactEmail` | *Optional.* **Contact → Email**, a fallback if Stripe has no email |
+   | `contactEmail` | *Optional, recommended.* **Contact → Email.** Sent *alongside* the Stripe email when they differ — buyers often pay with a different email than they signed up with, and Meta matches on either |
+   | `contactPhone` | *Optional, recommended.* **Contact → Phone number.** Stripe checkouts rarely collect a phone, so this is usually the only `ph` the event gets |
+   | `contactFirstName` | *Optional.* **Contact → First name** — a second `fn` value when it differs from the card name |
+   | `contactLastName` | *Optional.* **Contact → Last name** — a second `ln` value |
    | `fbc` / `fbp` | *Optional.* Contact properties holding the Meta click ids, if you store them |
    | `orderReference` | *Optional.* Another property holding the `cs_...` id, if that's where yours lives (used only when `checkoutSessionId` is empty) |
    | `eventName` | *Optional, usually left out.* A property whose value overrides the event name. Leave it out and the code sends `Purchase`. |
@@ -485,6 +488,16 @@ association time to exist before `externalId` is read.
 
    Skip any optional row you have no property for. Don't leave a row blank:
    an unmapped row shows *"Property selection is required"* and blocks **Save**.
+
+   The four `contact*` rows exist because the payment usually carries a *thin*
+   identity: Stripe checkouts rarely return a phone or address, and the card
+   email is often not the sign-up email. The code sends the Stripe identity
+   **and** the contact's as separate hashed values under the same key (`em`,
+   `ph`, `fn`, `ln`), and Meta matches on any of them. The `capi_match_keys`
+   output shows it per event — `em x2` means two distinct emails went out.
+   This measurably lifts Event Match Quality on purchase events. (Meta only:
+   don't replicate names onto the Google action — Google matches on email,
+   phone and click id, and only uses names inside a full postal-address bundle.)
 
 > ⚠️ **The left box is the name the code reads; the right box is the property.**
 > In production the first attempt had them mirrored: the left boxes held property

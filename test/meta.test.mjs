@@ -36,6 +36,26 @@ test('purchase: one Purchase with the charged amount, pi_ as event_id, hashed id
   assert.ok(guard.body.properties.meta_capi_purchase_sent_at);
 });
 
+test('purchase: the contact identity rides along — a second email, and the only phone when Stripe has none', async () => {
+  const s = session();
+  s.customer_details = { ...s.customer_details, phone: '' };
+  const { out, find } = await runAction(PURCHASE, {
+    inputs: {
+      paymentIntentId: 'pi_1', externalId: '501',
+      contactEmail: 'Personal@Example.com', contactPhone: '404-555-0199',
+      contactFirstName: 'Alexandra', contactLastName: 'Rivera',
+    },
+    env, handlers: [stripeSessionList(s), metaOk, hubspotPatch()],
+  });
+  assert.equal(out.capi_result, 'sent');
+  const ud = find('graph.facebook.com')[0].body.data[0].user_data;
+  assert.deepEqual(ud.em, [sha('buyer@example.com'), sha('personal@example.com')], 'both emails, Stripe first');
+  assert.deepEqual(ud.ph, [sha('14045550199')], 'the contact phone fills in when Stripe has none');
+  assert.deepEqual(ud.fn, [sha('alex'), sha('alexandra')]);
+  assert.deepEqual(ud.ln, [sha('rivera')], 'identical last names send once');
+  assert.match(out.capi_match_keys, /em x2/);
+});
+
 test('purchase: the guard short-circuits a re-enrollment without calling Stripe or Meta', async () => {
   const { out, calls } = await runAction(PURCHASE, { inputs: { paymentIntentId: 'pi_1', metaCapiSentAt: '2026-09-27T10:00:00Z' }, env });
   assert.equal(out.capi_result, 'skipped_already_sent');

@@ -61,7 +61,14 @@
  *   metaCapiSentAt    optional  the guard property (meta_capi_purchase_sent_at)
  *   checkoutSessionId optional  cs_... id if you store it (saves one Stripe call)
  *   orderReference    optional  another property holding the cs_... id, if that's where yours is
- *   contactEmail      optional  associated contact's email, fallback if Stripe has none
+ *   contactEmail      optional  associated contact's email. Sent ALONGSIDE the Stripe
+ *                               email when they differ — buyers often pay with a
+ *                               different email than they signed up with, and Meta
+ *                               matches on any value it's given.
+ *   contactPhone      optional  associated contact's phone. Stripe checkouts rarely
+ *                               collect one, so this is usually the only ph.
+ *   contactFirstName  optional  associated contact's first name  } second fn/ln
+ *   contactLastName   optional  associated contact's last name   } values
  *   fbc / fbp         optional  associated contact properties, if you store them
  *   externalId        optional  associated CONTACT record id. Map it: a free match gain.
  *   eventName         optional  defaults to Purchase
@@ -477,9 +484,20 @@ exports.main = async (event, callback) => {
   const details = (session && session.customer_details) || (charge && charge.billing_details) || {};
   const address = details.address || {};
 
-  const email = normEmail(details.email || (intent && intent.receipt_email) || inp.contactEmail);
-  const phone = normPhone(details.phone);
+  // Stripe identity first, the HubSpot contact's as a second value. Meta accepts
+  // multiple hashes per key and matches on ANY of them — buyers often pay with a
+  // different email than they registered with, so both together match more
+  // people than either alone. uniq() means identical values send once.
+  const uniq = (arr) => [...new Set(arr.filter(Boolean))];
+
+  const emails = uniq([
+    normEmail(details.email || (intent && intent.receipt_email)),
+    normEmail(inp.contactEmail)
+  ]);
+  const phones = uniq([normPhone(details.phone), normPhone(inp.contactPhone)]);
   const { first, last } = splitName(details.name);
+  const firsts = uniq([normText(first), normText(inp.contactFirstName)]);
+  const lasts = uniq([normText(last), normText(inp.contactLastName)]);
 
   const linkParams = paramsFromUrl(session && session.success_url);
   const fbclid = str(linkParams.fbclid);
@@ -498,11 +516,17 @@ exports.main = async (event, callback) => {
   const userData = {};
   const matchKeys = [];
   const add = (key, hashed, label) => { userData[key] = [hashed]; matchKeys.push(label || key); };
+  // Multi-value keys: already-normalized values in, one hash per distinct value.
+  const addAll = (key, values) => {
+    if (!values.length) return;
+    userData[key] = values.map(sha256);
+    matchKeys.push(values.length > 1 ? key + ' x' + values.length : key);
+  };
 
-  if (email) add('em', sha256(email));
-  if (phone) add('ph', sha256(phone));
-  if (normText(first)) add('fn', sha256(normText(first)));
-  if (normText(last)) add('ln', sha256(normText(last)));
+  addAll('em', emails);
+  addAll('ph', phones);
+  addAll('fn', firsts);
+  addAll('ln', lasts);
   if (normText(address.city)) add('ct', sha256(normText(address.city)));
   if (normState(address.state)) add('st', sha256(normState(address.state)));
   if (normZip(address.postal_code)) add('zp', sha256(normZip(address.postal_code)));
@@ -511,9 +535,9 @@ exports.main = async (event, callback) => {
   if (fbc) { userData.fbc = fbc; matchKeys.push('fbc'); }
   if (fbp) { userData.fbp = fbp; matchKeys.push('fbp'); }
 
-  if (!email && !phone && !fbc && !externalId) {
+  if (!emails.length && !phones.length && !fbc && !externalId) {
     return done({ ...skeleton, capi_result: 'skipped_no_identifier',
-      capi_error: 'Stripe returned no email, phone or click id for this payment.' });
+      capi_error: 'No email, phone or click id from Stripe or the contact for this payment.' });
   }
 
   /* -------------------------------------------------------- 5. custom_data */
