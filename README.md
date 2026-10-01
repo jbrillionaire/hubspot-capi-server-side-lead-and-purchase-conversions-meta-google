@@ -258,6 +258,8 @@ building.
    node scripts/create-guard-properties.mjs --dry-run
    ```
 
+   Runs [`scripts/create-guard-properties.mjs`](scripts/create-guard-properties.mjs).
+
    Windows PowerShell 5.1 has no `&&`. Put each command on its own line, or
    separate them with `;`.
 
@@ -1034,6 +1036,8 @@ You don't need the Google Ads API for uploads. Enable it only if you also want a
 node scripts/google-oauth-setup.mjs --client "C:\Users\you\.hubspot-capi\client_secret.json" --for hubspot
 ```
 
+Runs [`scripts/google-oauth-setup.mjs`](scripts/google-oauth-setup.mjs).
+
 1. The terminal prints *"Sign in with the Google account that has access to the Google Ads
    account."* and, below it, *"If the browser does not open, paste this URL:"* followed by a long
    `https://accounts.google.com/o/oauth2/v2/auth?...` link. Your browser opens that link.
@@ -1215,6 +1219,8 @@ until the account allows them.
 ```powershell
 node scripts/google-conversion-test.mjs --customer 1234567890 --action 987654321
 ```
+
+Runs [`scripts/google-conversion-test.mjs`](scripts/google-conversion-test.mjs).
 
 - `--customer`: the ad account id from the top right of Google Ads, with or without dashes
   (`123-456-7890` → `1234567890`).
@@ -1656,6 +1662,8 @@ matching follows. A **200 means received, not matched**. Look up any single uplo
 node scripts/google-conversion-test.mjs --status <gads_request_id>
 ```
 
+Runs [`scripts/google-conversion-test.mjs`](scripts/google-conversion-test.mjs).
+
 > ⚠️ **Don't judge credited conversions for about 3 days.** Google keeps matching after the day
 > ends. In production a day's purchase credit went from 8 to 17, and a day's lead credit from 121
 > to 223, between day 1 and day 3. An early read made the old tag look ~16x over-counted; the
@@ -1828,7 +1836,7 @@ attached, and writes the UTMs onto the payment record.
 | Guard blank but Meta has the event | `CAPI_GUARD_WRITE_TOKEN` detached, rotated, or the property is date-only | Reattach; recreate the property as date-time |
 | `skipped_test_mode` | A test-mode payment reached a live-key action | Expected; not revenue |
 | `skipped_too_old` | Record synced > 6 days after payment (Meta) / > 89 days (Google) | Expected; never back-dated |
-| Google `invalid_grant` | Consent screen left in Testing (7-day tokens) or token revoked | Publish or use Internal; re-run `google-oauth-setup.mjs` |
+| Google `invalid_grant` | Consent screen left in Testing (7-day tokens) or token revoked | Publish or use Internal; re-run [`google-oauth-setup.mjs`](scripts/google-oauth-setup.mjs) |
 | `DESTINATION_ACCOUNT_NOT_ENABLED_ENHANCED_CONVERSIONS_FOR_LEADS` | Just enabled, still propagating | Wait 30-60 minutes |
 | `gads_result = validated` in production | `GOOGLE_ADS_VALIDATE_ONLY` still attached | Detach it |
 | Google shows 0 for new actions | Secondary actions, or < 3 days | *All conversions*; wait |
